@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
 
 jobs:
   deploy-to-github-pages:
@@ -12,9 +12,10 @@ jobs:
     - name: Setup .NET Core SDK
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 6.0.301
+        dotnet-version: 7.0.102
     - name: Publish .NET Core Project
-      run: dotnet publish pdf_generation/pdf_generation.csproj -c Release -o release --nologo
+      run: dotnet publish pdf_generation.csproj -c Release -o release --nologo
+  
     - name: Change base-tag in index.html from / to pdf_generation
       run: sed -i 's/<base href="\/" \/>/<base href="\/pdf_generation\/" \/>/g' release/wwwroot/index.html
     
