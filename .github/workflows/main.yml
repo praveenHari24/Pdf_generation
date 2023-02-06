@@ -1,32 +1,29 @@
-name: DeployToGitHubPages
-env:
-  PUBLISH_DIR: bin/Release/netstandard2.1/publish/wwwroot
+name: Deploy to GitHub Pages
 
-# Controls when the action will run
 on:
   push:
     branches: [ master ]
 
 jobs:
-  build:
+  deploy-to-github-pages:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-
-    - name: Publish app
-      run: dotnet publish -c Release
-
-    - name: Rewrite base href
-      uses: praveenHari24/ghaction-rewrite-base-href@v1
+    - name: Setup .NET Core SDK
+      uses: actions/setup-dotnet@v1
       with:
-        html_path: ${{ env.PUBLISH_DIR }}/index.html
-        base_href: /pdf_generation/
-
-    - name: GitHub Pages
-      if: success()
-      uses: crazy-max/ghaction-github-pages@v1.5.1
+        dotnet-version: 6.0.301
+    - name: Publish .NET Core Project
+      run: dotnet publish BankCapitalWasm/BankCapitalWasm.csproj -c Release -o release --nologo
+    - name: Change base-tag in index.html from / to pdf_generation
+      run: sed -i 's/<base href="\/" \/>/<base href="\/pdf_generation\/" \/>/g' release/wwwroot/index.html
+    
+    - name: Add .nojekyll file
+      run: touch release/wwwroot/.nojekyll
+    
+    - name: Commit wwwroot to GitHub Pages
+      uses: JamesIves/github-pages-deploy-action@3.7.1
       with:
-        target_branch: gh-pages
-        build_dir: ${{ env.PUBLISH_DIR }}
-      env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        BRANCH: gh-pages
+        FOLDER: release/wwwroot
