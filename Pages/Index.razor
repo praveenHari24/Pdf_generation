@@ -7,39 +7,106 @@
 Welcome to your new app.
 
 <SurveyPrompt Title="How is Blazor working for you?" />
+<p>
+    <label>
+        Upload up to @maxAllowedFiles of up to @maxFileSize bytes:
+        <InputFile accept=".pdf" OnChange="@LoadFiles" multiple />
+    </label>
+</p>
 
-<button class="btn btn-primary" @onclick="GeneratePDF">Generate PDF</button>
+@if (isLoading)
+{
+    <p>Uploading...</p>
+}
+else
+{
+    <ul>
+        @foreach (var file in loadedFiles)
+        {
+            <li>
+                <ul>
+                    <li>Name: @file.Name</li>
+                    <li>Last modified: @file.LastModified.ToString()</li>
+                    <li>Size (bytes): @file.Size</li>
+                    <li>Content type: @file.ContentType</li>
+                </ul>
+            </li>
+        }
+    </ul>
+}
+
+<button disabled="@isDisabled" class="btn btn-primary" @onclick="GeneratePDF">Generate PDF</button>
 
 @code {
     @using Syncfusion.Pdf;
     @using Syncfusion.Pdf.Graphics;
     @using System.IO;
+@using Syncfusion.Pdf.Parsing;
     @inject Microsoft.JSInterop.IJSRuntime JS
 
-    private void GeneratePDF()
+    private Boolean isDisabled =true;
+    
+    
+
+    private async void GeneratePDF()
     {
-        //Create a new PDF document
         PdfDocument document = new PdfDocument();
+        foreach(var file in loadedFiles)
+        {
+            try
+            {
+                FileStream fs = new(file.Name, FileMode.Create);
+                await file.OpenReadStream().CopyToAsync(fs);
+                    PdfLoadedDocument ldoc = new PdfLoadedDocument(fs);
+                    document.Append(ldoc);
+                  
+            }
+            catch(Exception ex)
+            {
+                
+            }
 
-        //Add a page to the document
-        PdfPage page = document.Pages.Add();
+        }
 
-        //Create PDF graphics for the page
-        PdfGraphics graphics = page.Graphics;
-
-        //Set the standard font
-        PdfFont font = new PdfStandardFont(PdfFontFamily.Helvetica, 20);
-
-        //Draw the text
-        graphics.DrawString("Hello World!", font, PdfBrushes.Black, new Syncfusion.Drawing.PointF(0, 0));
-
+        try{
         //Saving the PDF to the MemoryStream
         MemoryStream stream = new MemoryStream();
 
         document.Save(stream);
         document.Close(true);
         
+        
         JS.SaveAs("Sample.pdf", stream.ToArray());
+        }
+        catch (Exception ex)
+        {
 
+        }
+
+    }
+
+    private List<IBrowserFile> loadedFiles = new();
+    private long maxFileSize = 1024 * 15;
+    private int maxAllowedFiles = 3;
+    private bool isLoading;
+
+    private void LoadFiles(InputFileChangeEventArgs e)
+    {
+        isLoading = true;
+        loadedFiles.Clear();
+
+        foreach (var file in e.GetMultipleFiles(maxAllowedFiles))
+        {
+            try
+            {
+                loadedFiles.Add(file);
+            }
+            catch (Exception ex)
+            {
+                
+            }
+        }
+        isDisabled = false;
+        isLoading = false;
     }
 }
