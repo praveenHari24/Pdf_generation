@@ -56,7 +56,7 @@ else
             try
             {
                 FileStream fs = new(file.Name, FileMode.Create);
-                await file.OpenReadStream().CopyToAsync(fs);
+                await file.OpenReadStream(5120000).CopyToAsync(fs);
                     PdfLoadedDocument ldoc = new PdfLoadedDocument(fs);
                     document.Append(ldoc);
                   
